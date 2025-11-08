@@ -1,0 +1,3193 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Bản đồ tra cứu giá đất theo bảng giá nhà nước tại Thị trấn Tân Biên</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/proj4.js"></script>
+        <script src="js/proj4leaflet.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="data/Gitnngnghip_0.js"></script>
+        <script src="data/Gitphinngnghip_1.js"></script>
+        <script src="data/Gihintrng_2.js"></script>
+        <script src="data/Thyh_3.js"></script>
+        <script src="data/nggiaothng_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+        }
+        var crs = new L.Proj.CRS('EPSG:9209', '+proj=tmerc +lat_0=0 +lon_0=105.5 +k=0.9999 +x_0=500000 +y_0=0 +ellps=WGS84 +towgs84=-191.90441429,-39.30318279,-111.45032835,0.00928836,-0.01975479,0.00427372,0.252906278 +units=m +no_defs', {
+            resolutions: [2800, 1400, 700, 350, 175, 84, 42, 21, 11.2, 5.6, 2.8, 1.4, 0.7, 0.35, 0.14, 0.07],
+        });
+        var map = L.map('map', {
+            crs: crs,
+            continuousWorld: false,
+            worldCopyJump: false, 
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'topright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>Bản đồ tra cứu giá đất theo bảng giá nhà nước tại Thị trấn Tân Biên</h2>';
+        };
+        title.addTo(map);
+        var abstract = new L.Control({'position':'topleft'});
+        abstract.onAdd = function (map) {
+            this._div = L.DomUtil.create('div',
+            'leaflet-control abstract');
+            this._div.id = 'abstract'
+                this._div.setAttribute("onmouseenter", "abstract.show()");
+                this._div.setAttribute("onmouseleave", "abstract.hide()");
+                this.hide();
+                return this._div;
+            };
+            abstract.hide = function () {
+                this._div.classList.remove("abstractUncollapsed");
+                this._div.classList.add("abstract");
+                this._div.innerHTML = 'i'
+            }
+            abstract.show = function () {
+                this._div.classList.remove("abstract");
+                this._div.classList.add("abstractUncollapsed");
+                this._div.innerHTML = '🔹Hướng dẫn sử dụng<br />- Layer List: Hiển thị danh sách lớp <br />- Measure Tool: Thước đo khoảng cách/diện tích<br />- Geolocation: Định vị vị trí người dùng (GPS)<br />- Layer seach: Tra cứu thửa đất theo số tờ_số thửa <br />🔹 Giá đất được xác định và áp dụng theo Quyết định số 35/2020/QĐ-UBND và Quyết định 54/2024/QĐ-UBND Tỉnh Tây Ninh <br />🔹 Lưu ý: Thông tin chỉ mang tính chất tham khảo <br /><br /><br /><br />';
+        };
+        abstract.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+            map.setMaxBounds(map.getBounds());
+        }
+        function pop_Gitnngnghip_0(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Số tờ</th>\
+                        <td class="visible-with-data" id="soto">' + (feature.properties['soto'] !== null ? autolinker.link(String(feature.properties['soto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Số thửa </th>\
+                        <td class="visible-with-data" id="sothua">' + (feature.properties['sothua'] !== null ? autolinker.link(String(feature.properties['sothua']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diện tích (m2)</th>\
+                        <td class="visible-with-data" id="Dientich">' + (feature.properties['Dientich'] !== null ? autolinker.link(String(feature.properties['Dientich']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Đường </th>\
+                        <td class="visible-with-data" id="Duong">' + (feature.properties['Duong'] !== null ? autolinker.link(String(feature.properties['Duong']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá ODT</th>\
+                        <td class="visible-with-data" id="Giá ODT">' + (feature.properties['Giá ODT'] !== null ? autolinker.link(String(feature.properties['Giá ODT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá TMD</th>\
+                        <td class="visible-with-data" id="Giá TMD">' + (feature.properties['Giá TMD'] !== null ? autolinker.link(String(feature.properties['Giá TMD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá CSK</th>\
+                        <td class="visible-with-data" id="Giá CSK">' + (feature.properties['Giá CSK'] !== null ? autolinker.link(String(feature.properties['Giá CSK']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá LUA</th>\
+                        <td class="visible-with-data" id="Giá LUA">' + (feature.properties['Giá LUA'] !== null ? autolinker.link(String(feature.properties['Giá LUA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá HNK</th>\
+                        <td class="visible-with-data" id="Giá HNK">' + (feature.properties['Giá HNK'] !== null ? autolinker.link(String(feature.properties['Giá HNK']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá CLN</th>\
+                        <td class="visible-with-data" id="Giá CLN">' + (feature.properties['Giá CLN'] !== null ? autolinker.link(String(feature.properties['Giá CLN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá RSX</th>\
+                        <td class="visible-with-data" id="Giá RSX">' + (feature.properties['Giá RSX'] !== null ? autolinker.link(String(feature.properties['Giá RSX']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá NTS</th>\
+                        <td class="visible-with-data" id="Giá NTS">' + (feature.properties['Giá NTS'] !== null ? autolinker.link(String(feature.properties['Giá NTS']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Vị trí </th>\
+                        <td class="visible-with-data" id="vi tri">' + (feature.properties['vi tri'] !== null ? autolinker.link(String(feature.properties['vi tri']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Gitnngnghip_0_0(feature) {
+            switch(String(feature.properties['Giá CLN'])) {
+                case '84000':
+                    return {
+                pane: 'pane_Gitnngnghip_0',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,252,245,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '100000':
+                    return {
+                pane: 'pane_Gitnngnghip_0',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(178,224,171,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '126000':
+                    return {
+                pane: 'pane_Gitnngnghip_0',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(7,137,42,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Gitnngnghip_0',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,68,27,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Gitnngnghip_0');
+        map.getPane('pane_Gitnngnghip_0').style.zIndex = 400;
+        map.getPane('pane_Gitnngnghip_0').style['mix-blend-mode'] = 'normal';
+        var layer_Gitnngnghip_0 = new L.geoJson(json_Gitnngnghip_0, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Gitnngnghip_0',
+            layerName: 'layer_Gitnngnghip_0',
+            pane: 'pane_Gitnngnghip_0',
+            onEachFeature: pop_Gitnngnghip_0,
+            style: style_Gitnngnghip_0_0,
+        });
+        bounds_group.addLayer(layer_Gitnngnghip_0);
+        map.addLayer(layer_Gitnngnghip_0);
+        function pop_Gitphinngnghip_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Số tờ </th>\
+                        <td class="visible-with-data" id="soto">' + (feature.properties['soto'] !== null ? autolinker.link(String(feature.properties['soto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Số thửa </th>\
+                        <td class="visible-with-data" id="sothua">' + (feature.properties['sothua'] !== null ? autolinker.link(String(feature.properties['sothua']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diện tích (m2)</th>\
+                        <td class="visible-with-data" id="Dientich">' + (feature.properties['Dientich'] !== null ? autolinker.link(String(feature.properties['Dientich']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Đường </th>\
+                        <td class="visible-with-data" id="Duong">' + (feature.properties['Duong'] !== null ? autolinker.link(String(feature.properties['Duong']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Đoạn </th>\
+                        <td class="visible-with-data" id="Doan">' + (feature.properties['Doan'] !== null ? autolinker.link(String(feature.properties['Doan']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ODT gốc</th>\
+                        <td class="visible-with-data" id="ODT gốc">' + (feature.properties['ODT gốc'] !== null ? autolinker.link(String(feature.properties['ODT gốc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hệ số</th>\
+                        <td class="visible-with-data" id="Hệ số">' + (feature.properties['Hệ số'] !== null ? autolinker.link(String(feature.properties['Hệ số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá ODT</th>\
+                        <td class="visible-with-data" id="Giá ODT">' + (feature.properties['Giá ODT'] !== null ? autolinker.link(String(feature.properties['Giá ODT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ghi chú</th>\
+                        <td class="visible-with-data" id="Ghi chú">' + (feature.properties['Ghi chú'] !== null ? autolinker.link(String(feature.properties['Ghi chú']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Gitphinngnghip_1_0(feature) {
+            switch(String(feature.properties['Giá ODT'])) {
+                case '200000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,242,251,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '201600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,241,248,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '213600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,240,246,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '220800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,239,244,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '221760':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,238,242,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '226800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,237,240,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '228000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,236,238,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '232800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,235,236,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '249600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,235,233,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '254400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,234,231,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '259200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,233,229,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '259560':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,232,227,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '268800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,231,225,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '288000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,230,223,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '293760':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,229,221,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '295200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,228,218,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '313200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,227,216,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '316800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,226,214,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '336000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,225,212,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '350400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,224,210,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '360000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,222,207,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '364000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,220,205,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '367200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,218,202,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '370800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,216,200,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '380160':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,214,197,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '393600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,212,194,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '436800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,210,192,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '445200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,208,189,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '446400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,206,187,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '453600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,204,184,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '470400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,203,182,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '480000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,201,179,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '492000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,199,176,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '494400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,197,174,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '504000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,195,171,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '528000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,193,169,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '540000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,191,166,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '550800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,189,163,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '552000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,187,161,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '554400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,185,158,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '561600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,183,156,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '576240':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,180,153,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '588000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,178,151,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '612000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,176,149,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '613200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,174,146,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '624000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,172,144,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '633600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,170,141,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '636000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,167,139,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '648000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,165,136,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '658800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,163,134,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '660000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,161,131,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '672000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,159,129,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '688800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,157,126,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '696000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,155,124,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '720000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,152,121,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '732000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,150,119,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '740880':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,148,116,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '744000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,146,114,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '747600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,144,112,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '756000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,142,110,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '764400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,140,108,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '768000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,137,105,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '792000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,135,103,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '798000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,133,101,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '809760':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,131,99,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '816000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,129,97,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '823200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(252,127,95,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '828000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,125,93,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '831600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,123,91,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '840000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,121,89,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '846000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,118,86,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '856800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,116,84,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '864000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,114,82,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '864360':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,112,80,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '865200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,110,78,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '867600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,108,76,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '876000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,106,74,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '895200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(250,103,72,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '900000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(250,101,71,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '924000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(249,98,69,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '948000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(248,96,68,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '949200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(248,93,66,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '957600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,91,64,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '960000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,88,63,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '984000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(246,86,61,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1041600':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(245,84,60,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1044000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(245,81,58,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1068000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(244,79,56,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1092000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(243,76,55,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1108800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(243,74,53,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1116000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(242,71,52,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1140000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(241,69,50,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1156800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(241,66,49,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1164000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,64,47,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1176000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,61,45,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1188000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(239,59,44,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1200000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,57,43,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1215300':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(235,55,42,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1224000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(233,53,42,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1234800':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,51,41,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1236000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,50,40,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1248000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,48,39,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1260000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,46,38,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1272000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,44,38,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1279200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,42,37,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1356000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(220,40,36,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1368000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(218,39,35,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1380000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(216,37,34,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1395000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(214,35,34,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1404000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(212,33,33,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1428000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(210,31,32,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1488000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,29,31,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1560000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(207,27,30,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1620400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(205,26,30,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1680000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,24,29,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1788000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,23,28,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1790400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(198,23,28,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1800000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(196,22,28,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1836000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(194,22,27,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1848000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(192,21,27,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1860000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(190,21,26,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '1940400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(188,20,26,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2024400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(185,20,25,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2196000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(183,19,25,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2400000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(181,19,24,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2558400':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(179,18,24,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2640000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(177,18,23,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2772000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(175,17,23,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2835700':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(172,17,23,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2881200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(170,16,22,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '2892000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,16,22,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '3133200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(166,15,21,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '3255000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(167,15,22,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '3960000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(169,14,23,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '4051000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(172,13,25,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '4116000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(175,12,27,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '4476000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(177,12,28,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '4477200':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(180,11,30,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '4650000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(183,10,31,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '4848000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(185,9,33,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '5880000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(188,9,34,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '6396000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(191,8,36,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '6636000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(193,7,37,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '7872000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(196,6,39,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '8400000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(199,6,40,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '9480000':
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,5,42,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Gitphinngnghip_1',
+                opacity: 1,
+                color: 'rgba(4,8,12,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(204,4,43,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Gitphinngnghip_1');
+        map.getPane('pane_Gitphinngnghip_1').style.zIndex = 401;
+        map.getPane('pane_Gitphinngnghip_1').style['mix-blend-mode'] = 'normal';
+        var layer_Gitphinngnghip_1 = new L.geoJson(json_Gitphinngnghip_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Gitphinngnghip_1',
+            layerName: 'layer_Gitphinngnghip_1',
+            pane: 'pane_Gitphinngnghip_1',
+            onEachFeature: pop_Gitphinngnghip_1,
+            style: style_Gitphinngnghip_1_0,
+        });
+        bounds_group.addLayer(layer_Gitphinngnghip_1);
+        map.addLayer(layer_Gitphinngnghip_1);
+        function pop_Gihintrng_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Số tờ </th>\
+                        <td class="visible-with-data" id="soto">' + (feature.properties['soto'] !== null ? autolinker.link(String(feature.properties['soto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Số thửa </th>\
+                        <td class="visible-with-data" id="sothua">' + (feature.properties['sothua'] !== null ? autolinker.link(String(feature.properties['sothua']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Chủ sử dụng </th>\
+                        <td class="visible-with-data" id="CSD">' + (feature.properties['CSD'] !== null ? autolinker.link(String(feature.properties['CSD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diện tích (m2)</th>\
+                        <td class="visible-with-data" id="Dientich">' + (feature.properties['Dientich'] !== null ? autolinker.link(String(feature.properties['Dientich']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Loại đất </th>\
+                        <td class="visible-with-data" id="Loaidat">' + (feature.properties['Loaidat'] !== null ? autolinker.link(String(feature.properties['Loaidat']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Giá đất </th>\
+                        <td class="visible-with-data" id="Giá đấ">' + (feature.properties['Giá đấ'] !== null ? autolinker.link(String(feature.properties['Giá đấ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Gihintrng_2_0(feature) {
+            switch(String(feature.properties['Loaidat'])) {
+                case 'BHK':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,240,180,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'CAN':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,80,70,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'CLN':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,210,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'CQP':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,100,80,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DBV':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DCH':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DGD':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DGT':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,50,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DKH':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DKV':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DSH':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DTL':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(170,255,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DTT':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DVH':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'DYT':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'LUK':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,252,150,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'NHK':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,240,180,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'NTS':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(170,255,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'ODT':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,160,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'ODT +CLN':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,160,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'ODT+BHK':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,160,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'ODT+CLN':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,160,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'SON':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(160,255,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'TMD':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(250,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'TON':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'TSC':
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Gihintrng_2',
+                opacity: 1,
+                color: 'rgba(17,11,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(230,200,111,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Gihintrng_2');
+        map.getPane('pane_Gihintrng_2').style.zIndex = 402;
+        map.getPane('pane_Gihintrng_2').style['mix-blend-mode'] = 'normal';
+        var layer_Gihintrng_2 = new L.geoJson(json_Gihintrng_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Gihintrng_2',
+            layerName: 'layer_Gihintrng_2',
+            pane: 'pane_Gihintrng_2',
+            onEachFeature: pop_Gihintrng_2,
+            style: style_Gihintrng_2_0,
+        });
+        bounds_group.addLayer(layer_Gihintrng_2);
+        map.addLayer(layer_Gihintrng_2);
+        function pop_Thyh_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Thyh_3_0() {
+            return {
+                pane: 'pane_Thyh_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(170,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Thyh_3');
+        map.getPane('pane_Thyh_3').style.zIndex = 403;
+        map.getPane('pane_Thyh_3').style['mix-blend-mode'] = 'normal';
+        var layer_Thyh_3 = new L.geoJson(json_Thyh_3, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Thyh_3',
+            layerName: 'layer_Thyh_3',
+            pane: 'pane_Thyh_3',
+            onEachFeature: pop_Thyh_3,
+            style: style_Thyh_3_0,
+        });
+        bounds_group.addLayer(layer_Thyh_3);
+        map.addLayer(layer_Thyh_3);
+        function pop_nggiaothng_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Tên đường</th>\
+                        <td class="visible-with-data" id="Tenduong">' + (feature.properties['Tenduong'] !== null ? autolinker.link(String(feature.properties['Tenduong']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Lộ giới </th>\
+                        <td class="visible-with-data" id="Logioi">' + (feature.properties['Logioi'] !== null ? autolinker.link(String(feature.properties['Logioi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Đoạn </th>\
+                        <td class="visible-with-data" id="Doan">' + (feature.properties['Doan'] !== null ? autolinker.link(String(feature.properties['Doan']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ODT</th>\
+                        <td class="visible-with-data" id="ODT">' + (feature.properties['ODT'] !== null ? autolinker.link(String(feature.properties['ODT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_nggiaothng_4_0() {
+            return {
+                pane: 'pane_nggiaothng_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,170,50,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_nggiaothng_4');
+        map.getPane('pane_nggiaothng_4').style.zIndex = 404;
+        map.getPane('pane_nggiaothng_4').style['mix-blend-mode'] = 'normal';
+        var layer_nggiaothng_4 = new L.geoJson(json_nggiaothng_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_nggiaothng_4',
+            layerName: 'layer_nggiaothng_4',
+            pane: 'pane_nggiaothng_4',
+            onEachFeature: pop_nggiaothng_4,
+            style: style_nggiaothng_4_0,
+        });
+        bounds_group.addLayer(layer_nggiaothng_4);
+        map.addLayer(layer_nggiaothng_4);
+        var overlaysTree = [
+            {label: '<img src="legend/nggiaothng_4.png" /> Đường giao thông', layer: layer_nggiaothng_4},
+            {label: '<img src="legend/Thyh_3.png" /> Thủy hệ', layer: layer_Thyh_3},
+            {label: 'Giá hiện trạng <br /><table><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtbằngtrồngcâyhàngnămkhác0.png" /></td><td>Đất bằng trồng cây hàng năm khác </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtanninh1.png" /></td><td>Đất an ninh</td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấttrồngcâylâunăm2.png" /></td><td>Đất trồng cây lâu năm </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtquốcphòng3.png" /></td><td>Đất quốc phòng </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtcôngtrìnhbưuchínhviễnthông4.png" /></td><td>Đất công trình bưu chính viễn thông </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtchợ5.png" /></td><td>Đất chợ</td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtxâydựngcơsởgiáodụcvàđàotạo6.png" /></td><td>Đất xây dựng cơ sở giáo dục và đào tạo </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtgiaothông7.png" /></td><td>Đất giao thông </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtxâydựngcơsởkhoahọcvàcôngnghệ8.png" /></td><td>Đất xây dựng cơ sở khoa học và công nghệ </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtkhuvuichơigiảitrícôngcộng9.png" /></td><td>Đất khu vui chơi, giải trí công cộng </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtsinhhoạtcộngđồng10.png" /></td><td>Đất sinh hoạt cộng đồng </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtthủylợi11.png" /></td><td>Đất thủy lợi</td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtxâydựngcơsởthểdụcthểthao12.png" /></td><td>Đất xây dựng cơ sở thể dục thể thao </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtxâydựngcơsởvănhóa13.png" /></td><td>Đất xây dựng cơ sở văn hóa </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtxâydựngcơsởytế14.png" /></td><td>Đất xây dựng cơ sở y tế </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấttrồnglúanướccònlại15.png" /></td><td>Đất trồng lúa nước còn lại </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtnươngrẫytrồngcâyhàngnămkhác16.png" /></td><td>Đất nương rẫy trồng cây hàng năm khác </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtnuôitrồngthủysản17.png" /></td><td>Đất nuôi trồng thủy sản </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtởđôthị18.png" /></td><td>Đất ở đô thị </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_ĐấtởđôthịĐấttrồngcâylâunăm19.png" /></td><td>Đất ở đô thị + Đất trồng cây lâu năm </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_ĐấtởđôthịĐấtbằngtrồngcâyhàngnămkhác20.png" /></td><td>Đất ở đô thị + Đất bằng trồng cây hàng năm khác  </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_ĐấtởđôthịĐấttrồngcâylâunăm21.png" /></td><td>Đất ở đô thị + Đất trồng cây lâu năm </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtsôngngòikênhrạchsuối22.png" /></td><td>Đất sông,ngòi,kênh,rạch,suối</td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtthươngmạidịchvụ23.png" /></td><td>Đất thương mại dịch vụ </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtcơsởtôngiáo24.png" /></td><td>Đất cơ sở tôn giáo </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_Đấtxâydựngtrụsởcơquan25.png" /></td><td>Đất xây dựng trụ sở cơ quan </td></tr><tr><td style="text-align: center;"><img src="legend/Gihintrng_2_26.png" /></td><td></td></tr></table>', layer: layer_Gihintrng_2},
+            {label: 'Giá đất phi nông nghiệp <br /><table><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2000000.png" /></td><td>200000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2016001.png" /></td><td>201600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2136002.png" /></td><td>213600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2208003.png" /></td><td>220800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2217604.png" /></td><td>221760</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2268005.png" /></td><td>226800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2280006.png" /></td><td>228000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2328007.png" /></td><td>232800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2496008.png" /></td><td>249600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2544009.png" /></td><td>254400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_25920010.png" /></td><td>259200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_25956011.png" /></td><td>259560</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_26880012.png" /></td><td>268800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_28800013.png" /></td><td>288000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_29376014.png" /></td><td>293760</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_29520015.png" /></td><td>295200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_31320016.png" /></td><td>313200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_31680017.png" /></td><td>316800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_33600018.png" /></td><td>336000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_35040019.png" /></td><td>350400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_36000020.png" /></td><td>360000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_36400021.png" /></td><td>364000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_36720022.png" /></td><td>367200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_37080023.png" /></td><td>370800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_38016024.png" /></td><td>380160</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_39360025.png" /></td><td>393600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_43680026.png" /></td><td>436800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_44520027.png" /></td><td>445200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_44640028.png" /></td><td>446400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_45360029.png" /></td><td>453600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_47040030.png" /></td><td>470400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_48000031.png" /></td><td>480000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_49200032.png" /></td><td>492000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_49440033.png" /></td><td>494400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_50400034.png" /></td><td>504000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_52800035.png" /></td><td>528000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_54000036.png" /></td><td>540000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_55080037.png" /></td><td>550800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_55200038.png" /></td><td>552000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_55440039.png" /></td><td>554400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_56160040.png" /></td><td>561600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_57624041.png" /></td><td>576240</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_58800042.png" /></td><td>588000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_61200043.png" /></td><td>612000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_61320044.png" /></td><td>613200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_62400045.png" /></td><td>624000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_63360046.png" /></td><td>633600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_63600047.png" /></td><td>636000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_64800048.png" /></td><td>648000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_65880049.png" /></td><td>658800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_66000050.png" /></td><td>660000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_67200051.png" /></td><td>672000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_68880052.png" /></td><td>688800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_69600053.png" /></td><td>696000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_72000054.png" /></td><td>720000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_73200055.png" /></td><td>732000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_74088056.png" /></td><td>740880</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_74400057.png" /></td><td>744000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_74760058.png" /></td><td>747600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_75600059.png" /></td><td>756000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_76440060.png" /></td><td>764400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_76800061.png" /></td><td>768000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_79200062.png" /></td><td>792000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_79800063.png" /></td><td>798000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_80976064.png" /></td><td>809760</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_81600065.png" /></td><td>816000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_82320066.png" /></td><td>823200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_82800067.png" /></td><td>828000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_83160068.png" /></td><td>831600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_84000069.png" /></td><td>840000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_84600070.png" /></td><td>846000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_85680071.png" /></td><td>856800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_86400072.png" /></td><td>864000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_86436073.png" /></td><td>864360</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_86520074.png" /></td><td>865200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_86760075.png" /></td><td>867600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_87600076.png" /></td><td>876000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_89520077.png" /></td><td>895200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_90000078.png" /></td><td>900000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_92400079.png" /></td><td>924000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_94800080.png" /></td><td>948000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_94920081.png" /></td><td>949200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_95760082.png" /></td><td>957600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_96000083.png" /></td><td>960000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_98400084.png" /></td><td>984000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_104160085.png" /></td><td>1041600</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_104400086.png" /></td><td>1044000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_106800087.png" /></td><td>1068000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_109200088.png" /></td><td>1092000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_110880089.png" /></td><td>1108800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_111600090.png" /></td><td>1116000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_114000091.png" /></td><td>1140000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_115680092.png" /></td><td>1156800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_116400093.png" /></td><td>1164000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_117600094.png" /></td><td>1176000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_118800095.png" /></td><td>1188000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_120000096.png" /></td><td>1200000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_121530097.png" /></td><td>1215300</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_122400098.png" /></td><td>1224000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_123480099.png" /></td><td>1234800</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1236000100.png" /></td><td>1236000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1248000101.png" /></td><td>1248000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1260000102.png" /></td><td>1260000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1272000103.png" /></td><td>1272000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1279200104.png" /></td><td>1279200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1356000105.png" /></td><td>1356000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1368000106.png" /></td><td>1368000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1380000107.png" /></td><td>1380000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1395000108.png" /></td><td>1395000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1404000109.png" /></td><td>1404000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1428000110.png" /></td><td>1428000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1488000111.png" /></td><td>1488000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1560000112.png" /></td><td>1560000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1620400113.png" /></td><td>1620400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1680000114.png" /></td><td>1680000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1788000115.png" /></td><td>1788000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1790400116.png" /></td><td>1790400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1800000117.png" /></td><td>1800000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1836000118.png" /></td><td>1836000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1848000119.png" /></td><td>1848000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1860000120.png" /></td><td>1860000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_1940400121.png" /></td><td>1940400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2024400122.png" /></td><td>2024400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2196000123.png" /></td><td>2196000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2400000124.png" /></td><td>2400000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2558400125.png" /></td><td>2558400</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2640000126.png" /></td><td>2640000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2772000127.png" /></td><td>2772000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2835700128.png" /></td><td>2835700</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2881200129.png" /></td><td>2881200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_2892000130.png" /></td><td>2892000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_3133200131.png" /></td><td>3133200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_3255000132.png" /></td><td>3255000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_3960000133.png" /></td><td>3960000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_4051000134.png" /></td><td>4051000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_4116000135.png" /></td><td>4116000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_4476000136.png" /></td><td>4476000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_4477200137.png" /></td><td>4477200</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_4650000138.png" /></td><td>4650000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_4848000139.png" /></td><td>4848000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_5880000140.png" /></td><td>5880000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_6396000141.png" /></td><td>6396000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_6636000142.png" /></td><td>6636000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_7872000143.png" /></td><td>7872000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_8400000144.png" /></td><td>8400000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_9480000145.png" /></td><td>9480000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitphinngnghip_1_146.png" /></td><td></td></tr></table>', layer: layer_Gitphinngnghip_1},
+            {label: 'Giá đất nông nghiệp<br /><table><tr><td style="text-align: center;"><img src="legend/Gitnngnghip_0_840000.png" /></td><td>84000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitnngnghip_0_1000001.png" /></td><td>100000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitnngnghip_0_1260002.png" /></td><td>126000</td></tr><tr><td style="text-align: center;"><img src="legend/Gitnngnghip_0_3.png" /></td><td></td></tr></table>', layer: layer_Gitnngnghip_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        map.addControl(new L.Control.Search({
+            layer: layer_Gihintrng_2,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'Tờ_Thử'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        </script>
+    </body>
+</html>
